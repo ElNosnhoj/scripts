@@ -170,6 +170,7 @@ user = \"$CURRENT_USER\"
 EOL"
         run sudo systemctl enable greetd
         run sudo systemctl start greetd
+        run sudo systemctl set-default graphical.target
     ) & 
     spinner $! "... configuring and starting greetd"
 }
@@ -299,7 +300,6 @@ force_hdmi_audio() {
 # Main walkthrough
 # ================================================================
 walkthrough() {
-    check_root_access
     install_wayland_labwc
     install_chromium
     install_greetd_service
@@ -309,5 +309,5 @@ walkthrough() {
     force_hdmi_audio
     ask_reboot
 }
-
+check_root_access
 walkthrough

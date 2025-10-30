@@ -189,6 +189,68 @@ kiosk_setup(){
 }
 
 # ================================================================
+# Splashy screen?
+# ================================================================
+splash_setup(){
+    print "Installing Plymouth and splash theme ... " bright-black
+    check_internet_access || return 1
+    run sudo apt install --fix-missing --fix-broken -y plymouth plymouth-themes pix-plym-splash &
+    spinner $! "... Installing splash packages"
+
+    local THEME_SCRIPT="/usr/share/plymouth/themes/pix/pix.script"
+    if [ ! -e "$THEME_SCRIPT" ]; then
+        print "Warning: pix theme not found after installation. Splash screen may not work correctly." white red
+        return
+    fi
+
+    print "Setting Plymouth theme to pix..." bright-black
+    run sudo plymouth-set-default-theme pix
+
+    local SPLASH_URL="https://raw.githubusercontent.com/ElNosnhoj/scripts/refs/heads/main/assets/splash.png"
+    local SPLASH_PATH="/usr/share/plymouth/themes/pix/splash.png"
+
+    print "Downloading custom splash logo..." bright-black
+    if run sudo wget -q "$SPLASH_URL" -O "$SPLASH_PATH"; then
+        print "✔ Custom splash logo installed." bright-green
+    else
+        print "Warning: Failed to download custom splash logo. Using default." white red
+    fi
+
+    print "Updating initramfs..." bright-black
+    run sudo update-initramfs -u &
+    spinner $! "... Updating initramfs"
+
+    local CONFIG_TXT="/boot/firmware/config.txt"
+    if [ -f "$CONFIG_TXT" ]; then
+        if ! grep -q "disable_splash" "$CONFIG_TXT"; then
+            print "Adding disable_splash=1 to $CONFIG_TXT..." bright-black
+            run sudo bash -c "echo 'disable_splash=1' >> '$CONFIG_TXT'"
+        else
+            print "$CONFIG_TXT already contains disable_splash. Skipping." bright-yellow
+        fi
+    else
+        print "$CONFIG_TXT not found — skipping." bright-yellow
+    fi
+
+    local CMDLINE_TXT="/boot/firmware/cmdline.txt"
+    if [ -f "$CMDLINE_TXT" ]; then
+        if ! grep -q "splash" "$CMDLINE_TXT"; then
+            print "Adding quiet splash plymouth.ignore-serial-consoles to $CMDLINE_TXT..." bright-black
+            run sudo sed -i 's/$/ quiet splash plymouth.ignore-serial-consoles/' "$CMDLINE_TXT"
+        fi
+        if grep -q "console=tty1" "$CMDLINE_TXT"; then
+            print "Replacing console=tty1 with console=tty3 in $CMDLINE_TXT..." bright-black
+            run sudo sed -i 's/console=tty1/console=tty3/' "$CMDLINE_TXT"
+        elif ! grep -q "console=tty3" "$CMDLINE_TXT"; then
+            print "Adding console=tty3 to $CMDLINE_TXT..." bright-black
+            run sudo sed -i 's/$/ console=tty3/' "$CMDLINE_TXT"
+        fi
+        print "✔ Splash screen installed and configured with pix theme." bright-green
+    else
+        print "$CMDLINE_TXT not found — skipping cmdline.txt modification." bright-yellow
+    fi
+}
+# ================================================================
 # choice!
 # ================================================================
 walkthrough() {
@@ -197,6 +259,7 @@ walkthrough() {
     prompt_yes_no "Upgrade packages?" bright-yellow && apt_upgrade
     prompt_yes_no "Install docker?" bright-yellow && install_docker
     prompt_yes_no "Setup Kiosk mode?" bright-yellow && kiosk_setup
+    prompt_yes_no "Install splash screen?" bright-yellow && splash_setup
 }
 
 choice() {
@@ -210,6 +273,7 @@ choice() {
     print "4) Upgrade packages" bright-yellow
     print "5) Install Docker" bright-yellow
     print "6) Kiosk setup" bright-yellow
+    print "7) Splash setup" bright-yellow
     print "x) Exit" bright-red
     echo
     print "Enter your choice (0): " "" "" 1
@@ -224,6 +288,7 @@ choice() {
         [4]) apt_upgrade ;;
         [5]) install_docker ;;
         [6]) kiosk_setup ;;
+        [7]) splash_setup ;;
         [Xx])
             print "Exiting setup. Goodbye!" bright-green
             exit 0
@@ -240,6 +305,7 @@ choice() {
 }
 
 print "======= K2 Fresh Pi Setup =======" bright-green
+check_root_access
 while true; do
     choice
 done
