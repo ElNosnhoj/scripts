@@ -5,7 +5,6 @@
 DEBUG="${DEBUG:-0}"   # 0 = hide output, 1 = show output
 export DEBUG
 run() { if [[ $DEBUG -eq 1 ]]; then "$@"; else "$@" > /dev/null 2>&1; fi }
-
 [[ $DEBUG -eq 1 ]] && REDIR="" || REDIR="> /dev/null 2>&1"
 
 print() {
@@ -98,3 +97,17 @@ check_internet_access() {
         return 1
     fi
 }
+
+check_root_access() {
+    if [ "$(id -u)" -eq 0 ]; then
+        print "This script should not be run as root. Please run as a regular user with sudo permissions." white red
+        exit 1
+    fi
+}
+
+ask_reboot() {
+    prompt_yes_no "Want to reboot now?" || false
+    sudo reboot now
+    exit 1
+}
+

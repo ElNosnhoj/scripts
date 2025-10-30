@@ -5,7 +5,6 @@
 DEBUG="${DEBUG:-0}"   # 0 = hide output, 1 = show output
 export DEBUG
 run() { if [[ $DEBUG -eq 1 ]]; then "$@"; else "$@" > /dev/null 2>&1; fi }
-
 [[ $DEBUG -eq 1 ]] && REDIR="" || REDIR="> /dev/null 2>&1"
 
 print() {
@@ -111,6 +110,7 @@ ask_reboot() {
     sudo reboot now
     exit 1
 }
+
 
 # ================================================================
 # install wayland+labwc
