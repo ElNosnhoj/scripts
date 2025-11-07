@@ -64,8 +64,3 @@ Copy-Item -Path '$tempPipe' -Destination '$tempCopy' -Force
 }
 
 
-# ===============================================
-# examples
-# ===============================================
-ElevatedPs "echo hello; echo world" 
-
